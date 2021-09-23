@@ -1,0 +1,381 @@
+{% extends 'base.html' %}
+
+{% block windowtitle %}
+    Document Manager
+{% endblock %}
+
+{% block title %}
+    Document Manager
+{% endblock %}
+
+{% block header %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='browser.css') }}">
+    <script type="text/javascript">
+        // transfer of data from flask to vue.js
+        var cols = {{ cols|safe }};
+        var exportedFiles = {{ exportedFiles|safe }};
+        var downloadableFiles = {{ downloadableFiles|safe }};
+        var formats = {{ formats|safe }};
+        var comparableFiles = {{ comparableFiles|safe }};
+        var version = "{{ pythonversion|safe }}";
+    </script>
+{% endblock %}
+
+{% block content %}
+    <modal :style="[modals.help ? { display: 'block' } : { display: 'none' }]" @close="modals.help = false">
+        <div slot="header">
+            <h3><i class="mdi mdi-help-circle"></i> Help</h3>
+        </div>
+        <div slot="body">
+            <p>The status of the pages is color coded:</p>
+            <p>
+                <span style="background-color: #fff2df;">New</span>, 
+                <span style="background-color: #ffff00;">In Progress</span>, 
+                <span style="background-color: #66aaff;">Done</span>, 
+                <span style="background-color: #66ffff;">Final</span>, 
+                <span style="background-color: #66ff66;">Ground Truth (GT)</span>.
+            </p>
+            <p>Export to XML/TEI P5 is still experimental.</p>
+            <p>I am running on Python [[ version ]]</p>
+        </div>
+        <div slot="footer">
+        
+        </div>
+    </modal>
+
+    <modal :style="[modals.export ? { display: 'block' } : { display: 'none' }]" @close="modals.export = false">
+        <div slot="header">
+            <h3>Export</h3>
+        </div>
+        <div slot="body">
+            <span v-if="exportValidation">
+                <p>Are you sure to export pages <br />
+                [[ selectedPagesList.join(", ") ]] <br />
+                from [[ openedDocumentTitle ]] ([[ openedDocument ]]) <br />
+                to [[ exportFormat ]] 
+                <span v-if="exportFormat == 'TSV for TRACER'">
+                    using the separators "[[ separators ]]"</span>?</p>
+            </span>
+            <span v-else>
+                <p><span class="w3-tag w3-red">Error</span> Please select pages to export and/or an export format.</p>
+            </span>
+            <span v-if="modals.exporting">
+                <p><i class="mdi mdi-loading mdi-spin"></i> exporting ...</p>
+            </span>
+            <span v-if="modals.exportDone != false">
+                <p>Done! Download the exported file in the "Download" tab or here:<br />
+                    <a :href="modals.exportDone.links[0].href">[[ modals.exportDone.links[0].href ]]</a><br />
+                </p>
+            </span>
+        </div>
+        <div slot="footer">
+            <button class="w3-button w3-theme w3-margin w3-right" v-show="!modals.exportDone" :disabled="!exportValidation" @click="exportNow()">Export now</button>
+            <button class="w3-button w3-theme w3-margin w3-right" v-show="modals.exportDone" @click="exportFinished()">Done</button>
+        </div>
+    </modal>
+    
+    <modal :style="[modals.delete ? { display: 'block' } : { display: 'none' }]" @close="modals.delete = false">
+        <div slot="header">
+            <h3>Delete</h3>
+        </div>
+        <div slot="body">
+            <p>Are you sure to delete [[ modals.delete.filename ]]?</p>
+        </div>
+        <div slot="footer">
+            <button class="w3-button w3-theme w3-margin w3-right" @click="deleteNow(modals.delete)">Yes, delete it now</button>
+        </div>
+    </modal>
+    
+    <main class="w3-container w3-section">
+
+    <!-- ########## Tabs Navigation ###########--> 
+        <nav class="w3-container">
+            <div class="w3-bar w3-theme-light">
+                <button class="w3-bar-item w3-button w3-hover-opacity"
+                        @click="tabFocus='Browser'"
+                        :class="{'w3-theme':tabFocus=='Browser'}"
+                        >Browser</button>
+                <button class="w3-bar-item w3-button w3-hover-opacity"
+                        @click="getComments()"
+                        :class="{'w3-theme':tabFocus=='Comments'}"
+                        >Comments</button>
+                <button class="w3-bar-item w3-button w3-hover-opacity"
+                        @click="tabFocus='Export'"
+                        :class="{'w3-theme':tabFocus=='Export'}"
+                        >Export</button>
+                <button class="w3-bar-item w3-button w3-hover-opacity"
+                        @click="tabFocus='Download'"
+                        :class="{'w3-theme':tabFocus=='Download'}"
+                        >Download</button>
+                <button class="w3-bar-item w3-button w3-hover-opacity"
+                        @click="tabFocus='Compare'"
+                        :class="{'w3-theme':tabFocus=='Compare'}"
+                        >Compare</button>
+                <button class="w3-bar-item w3-button w3-hover-opacity"
+                        @click="getCensorship()"
+                        :class="{'w3-theme':tabFocus=='Censorship'}"
+                        >Censorship</button>
+            </div>
+        </nav>
+
+    <!-- ########## Tabs ###########--> 
+        <section id="Browser" class="w3-container"
+                 :class="[tabFocus == 'Browser' ? 'my-tab-active' : 'my-tab']">
+            <p>Your collections and documents on the Transkribus Server:</p>
+            <details class="w3-border w3-border-blue w3-padding-small"
+                    v-for="(col, colIdx) in cols">
+                <summary class="w3-hover-opacity  my-clickable"
+                         @click="getMetaData(colIdx)">
+                    [[ colIdx ]], [[ col.colName ]] ([[ col.nrOfDocuments ]] documents)
+                </summary>
+                <p class="w3-margin-left" v-if="loading.includes(colIdx)">
+                    <i class="mdi mdi-loading mdi-spin"></i> loading ...
+                </p>
+                <details v-for="(doc, docIdx) in col.docs">
+                    <summary class="w3-margin w3-hover-opacity my-clickable"
+                             @click="getMetaData(`${colIdx}.${docIdx}`)">
+                        [[ docIdx ]], [[ doc.title ]] ([[ doc.nrOfPages ]] pages)
+                    </summary>
+                    <p class="w3-margin-left" v-if="loading.includes(`${colIdx}.${docIdx}`)">
+                        <i class="mdi mdi-loading mdi-spin"></i> loading ...
+                    </p>
+                    <p class="w3-margin-left">
+                        <span v-for="(page, pageIdx) in doc.pages">
+                            <span
+                                class="w3-tag w3-text-black w3-hover-opacity my-page"
+                                :class="page.comment ? 'my-page-commented' : ''" 
+                                :title="page.status"
+                                @click="openPageEditor(colIdx, docIdx, pageIdx)" 
+                                :style="pagestyle(page.status)">
+                                [[ pageIdx ]]
+                            </span>
+                        </span>
+                    </p>
+                </details>
+            </details>
+        </section>
+
+        <section id="Comments" class="w3-container"
+                 :class="[tabFocus == 'Comments' ? 'my-tab-active' : 'my-tab']">
+            <table class="w3-table w3-striped">
+                <thead>
+                <tr>
+                    <th v-for="column in ['comment', 'cts', 'username', 'timestamp']">
+                        <button @click="tableSortBy('comments', column)" class="w3-button" title="sort table">[[ column ]]</button>
+                        <span v-if="tables.comments.sortKey === column">
+                            <span v-show="tables.comments.reverse"><i class="mdi mdi-arrow-down"></i></span>
+                            <span v-show="!tables.comments.reverse"><i class="mdi mdi-arrow-up"></i></span>
+                        </span>
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="comment in comments">
+                    <td style="white-space: pre-wrap">[[ comment.comment ]]</td>
+                    <td>
+                        [[ comment.cts ]]
+                        <a :href="`/cts/resolver?urn=${comment.cts}`"
+                            :title="`Open ${comment.cts} in the spellchecker editor`">
+                            <i class="mdi mdi-launch"></i>
+                        </a>
+                    </td>
+                    <td>[[ comment.username ]]</td>
+                    <td>[[ comment.timestamp ]]</td>
+                    <td>
+                        <!--TODO: implement a button to delete comments in the table of comments. Something like:
+                            <i @click="modals.delete = file" class="mdi mdi-delete-forever mdi-18px w3-red w3-hover-opacity my-clickable" :title="'Delete '+file.filename"></i>
+                        -->
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="Export" class="w3-container"
+                 :class="[tabFocus == 'Export' ? 'my-tab-active' : 'my-tab']">
+            <p>(Pages that already have been saved or 'dumped':)</p>
+            <details class="w3-border w3-border-blue w3-padding-small"
+                    v-for="(col, colIdx) in exportedFiles">
+                <summary class="w3-hover-opacity  my-clickable"
+                    @click="openedCollection = colIdx">
+                    [[ colIdx ]], [[ col.colName ]]
+                </summary>
+                <details v-for="(doc, docIdx) in col.docs">
+                    <summary class="w3-margin w3-hover-opacity my-clickable"
+                        @click="openedDocument = docIdx; openedDocumentTitle = doc.title; selectedRange=''">
+                        [[ docIdx ]], [[ doc.title ]]
+                    </summary>
+                    <p class="w3-margin-left">
+                        <input type="text"
+                            :ref="'range'+docIdx"
+                            class="my-input"
+                            style="width:50%"
+                            v-model="selectedRange" debounce="500"
+                            pattern="(\s*\d+\s*-\s*\d+\s*,?|\s*\d+\s*,?)*"
+                            placeholder="Enter a page range or select pages with the mouse"
+                            title="Enter a page range like '20' or '11-13' or '3-5,9,13-25. Alternatively, select pages with the mouse. Only 'FINAL' and 'GT' pages can be exported.">
+                        <select v-model="exportFormat">
+                            <option disabled value="">Select export format</option>
+                            <option v-for="format in formats" :value="format">[[ format ]]</option>
+                        </select>
+
+                        <!-- Additional fields for TRACER export: -->
+                        <br />
+                        <label for="separators"
+                            v-if="exportFormat == 'TSV for TRACER'">Separators:</label>
+                        <input v-if="exportFormat == 'TSV for TRACER'"
+                            type="text"
+                            class="my-input"
+                            id="separators"
+                            name="separators"
+                            v-model="separators"
+                            title="Separators used to segmentize the text.">
+                        <br />
+                        <span v-if="exportFormat != 'TEI for LERA'">
+                            <label for="id_addition">ID addition:</label>
+                            <input type="text"
+                                class="my-input"
+                                id="id_addition"
+                                name="id_addition"
+                                v-model="id_addition"
+                                title="Addition to the document identifier.">  
+                        </span>                 
+                            
+                        <button class="w3-button w3-theme" @click="exportDialog(colIdx, docIdx)">Export</button>
+                        <button class="w3-button w3-theme"  @click="clearSelection(docIdx)" title="Clear selection"><i class="mdi mdi-backspace"></i></button>
+                        <br />
+                        Your selection: [[ selectedPagesList.join(", ") ]]
+                    </p>
+                    <p class="w3-margin-left">
+                        <span v-for="(page, pageIdx) in doc.pages">
+                            <input v-if="page.status == 'GT' || page.status == 'FINAL'"
+                                style="display:none"     
+                                type="checkbox" 
+                                :id="`${docIdx}-${pageIdx}`" 
+                                :name="`${docIdx}-${pageIdx}`" 
+                                :value="`${docIdx}-${pageIdx}`" 
+                                v-model="selectedPages">
+                            <label :for="`${docIdx}-${pageIdx}`" 
+                                class="w3-tag w3-text-black w3-hover-opacity my-page"
+                                :class="[(selectedPages.includes(`${docIdx}-${pageIdx}`) ? 'my-page-selected' : ''), (page.comment ? 'my-page-commented' : '')]"
+                                :title="page.status"
+                                :style="pagestyle(page.status)">
+                                [[ pageIdx ]]
+                            </label>
+                        </span>
+                    </p>                   
+                </details>
+            </details>
+        </section>
+        
+        <section id="Download" class="w3-container"
+                 :class="[tabFocus == 'Download' ? 'my-tab-active' : 'my-tab']">
+            <h3>List of previously exported files</h3>
+            <p>(Click a filename to download.)</p>
+            <table class="w3-table w3-striped">
+                <thead>
+                <tr>
+                    <th v-for="column in ['filename', 'docId', 'ending', 'lastChanged']">
+                        <button @click="tableSortBy('downloadableFiles', column)" class="w3-button" title="sort table">[[ column ]]</button>
+                        <span v-if="tables.downloadableFiles.sortKey === column">
+                            <span v-show="tables.downloadableFiles.reverse"><i class="mdi mdi-arrow-down"></i></span>
+                            <span v-show="!tables.downloadableFiles.reverse"><i class="mdi mdi-arrow-up"></i></span>
+                        </span>
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="file in downloadableFiles">
+                    <td>
+                        <a :href="file.self.href">[[ file.filename ]]</a>
+                        <a v-if="file.ending == 'html'" title="open in new tab" target="_blank"
+                            class="w3-hover-opacity w3-theme-light"
+                            :href="'/view/'+file.filename"><i class="mdi mdi-launch"></i>
+                        </a>
+                    </td>
+                    <td>[[ file.docId ]]</td>
+                    <td>[[ file.ending ]]</td>
+                    <td>[[ file.lastChanged ]]</td>
+                    <td>
+                        <i @click="modals.delete = file" class="mdi mdi-delete-forever mdi-18px w3-red w3-hover-opacity my-clickable" :title="'Delete '+file.filename"></i>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+        
+        <section id="Compare" class="w3-container"
+                 :class="[tabFocus == 'Compare' ? 'my-tab-active' : 'my-tab']">
+            <h3>Select two files to compare</h3>
+            <p>(the first one will be treated as the original text)</p>
+            <ul class="w3-container" style="list-style: none;">
+                <li v-for="file in downloadableFiles" v-if="file.ending == compareFileFormat">
+                    <input type="checkbox" :id="file.filename" :value="file.filename" v-model="filesToCompare">
+                    <label :for="file.filename">
+                        <span v-if="filesToCompare[1] == file.filename"><strong>original</strong></span>
+                        [[ file.filename ]]
+                    </label>
+                </li>
+            </ul>
+            <p v-if="filesToCompare.length > 3 && (compareFormat == 'html' || compareFormat == 'raw_diff')"><span class="w3-tag w3-red">Error</span> You cannot select more than two files!</p>
+            
+            <select v-model="compareFormat">
+                <option disabled value="">Compare method</option>
+                <option v-for="format in ['html', 'raw_diff', 'TRACER']" :value="format">[[ format ]]</option>
+            </select>
+            
+            <button class="w3-button w3-theme" :disabled="filesToCompare.length != 3 && compareFormat == 'html'" 
+                    @click="compareNow()">Compare & Save</button>
+            <a :href="`/comparer?file1=${filesToCompare[1]}&file2=${filesToCompare[2]}`" target="_blank" 
+                v-if="filesToCompare.length == 3 && compareFormat == 'html'"
+                class="w3-button w3-theme">Open in "Compare & Analyze" editor</a>
+            <p v-if="loading.includes('comparing')"><i class="mdi mdi-loading mdi-spin"></i> comparing ...</p>
+        </section>
+        
+        <section id="Censorship" class="w3-container"
+                 :class="[tabFocus == 'Censorship' ? 'my-tab-active' : 'my-tab']">
+            <table class="w3-table w3-striped">
+                <thead>
+                <tr>
+                    <th v-for="column in ['cts', 'source', 'html', 'comment', 'username', 'timestamp', 'uuid']">
+                        <button @click="tableSortBy('censorship', column)" class="w3-button" title="sort table">[[ column ]]</button>
+                        <span v-if="tables.censorship.sortKey === column">
+                            <span v-show="tables.censorship.reverse"><i class="mdi mdi-arrow-down"></i></span>
+                            <span v-show="!tables.censorship.reverse"><i class="mdi mdi-arrow-up"></i></span>
+                        </span>
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="c in censorship">
+                    <td>
+                        [[ c.cts ]]
+                        <!--TODO: implement a link to the corresponding page and line:
+                            <a :href="`/cts/resolver?urn=${c.cts}`">
+                            <i class="mdi mdi-launch"></i>
+                        </a>-->
+                    </td>
+                    <td>[[ c.source ]]</td>
+                    <td v-html="c.html"></td>
+                    <td style="white-space: pre-wrap;">[[ c.comment ]]</td>
+                    <td>[[ c.username ]]</td>
+                    <td>[[ c.timestamp ]]</td>
+                    <td>[[ c.uuid ]]</td>
+                    <td>
+                        <!--TODO: Implement a button to delete censorship. Something like:
+                            <i @click="modals.delete = file" class="mdi mdi-delete-forever mdi-18px w3-red w3-hover-opacity my-clickable" :title="'Delete '+file.filename"></i>
+                        -->
+                        <!--[[ c.html ]]--> 
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </section>        
+    </main>
+</div>
+
+{% endblock %}
+
+{% block script %}
+    <script src="{{ url_for('static', filename='browser.js')}}"></script>
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block windowtitle %}
+    Compare & Analyze
+{% endblock %}
+
+{% block title %}
+    Compare & Analyze: [[ texts.original.docTitle ]] vs. [[ texts.censored.docTitle ]]
+{% endblock %}
+
+{% block header %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='comparer3.css') }}">
+
+    <!--<script src="../static/raw_data.js"></script>-->
+    
+    <script type="text/javascript">
+        // transfer of data from flask to vue.js
+        // var texts = {{ texts|safe }};
+        var files = {{ files|safe }};
+        var user = {{ user|safe }};
+        var texts = {
+            "censored": {
+              "colId": "0", 
+              "docId": "0", 
+              "docTitle": "… loading …"
+            }, 
+            "message": "Success! Use the censorship inspector to process the output.", 
+            "original": {
+              "colId": "0", 
+              "docId": "0", 
+              "docTitle": "… loading …"
+            }, 
+            "pages": {
+              "20": {
+                "words": [
+                  [
+                    "+", 
+                    "", 
+                    "r3l1@0", 
+                    "… loading … loading …", 
+                    "21.r4l26@3", 
+                    "word"
+                  ]
+              ]},},}
+        
+    </script>
+    
+{% endblock %}
+
+{% block content %}
+
+	<!-- Pagination -->
+    <nav class="w3-margin-bottom w3-section topBar">
+        <div class="w3-bar w3-light-gray w3-round-xxlarge w3-border">
+            <button class="w3-button" :disabled="thisPage<=minPage" @click="thisPage--">&lt;</button>
+            <button class="w3-button"
+                v-for="(page, pageIdx) in texts.pages"
+                :class="{'w3-red':pageIdx==thisPage}"
+                @click="thisPage=pageIdx">[[ pageIdx ]]</button>
+            <button class="w3-button" :disabled="thisPage>=maxPage" @click="thisPage++">&gt;</button>
+        </div>
+    </nav>
+
+
+<!-- Censorship side bar -->
+<aside ref="censorshipSidebar" 
+    style="right:0;display:none;"
+    class="w3-sidebar w3-bar-block w3-card w3-animate-right">
+    <div style="overflow-y: auto;">
+    <button @click="closeCensorshipSidebar()"
+        class="w3-bar-item w3-button"
+        title="Close censorship sidebar">
+        <i class="mdi mdi-chevron-double-right"></i>
+    </button>
+    
+    <ul class="w3-ul">
+        <li v-for="censorship in censorships" 
+            v-if="censorship.cts.split('.')[0].split(':')[1] == thisPage"
+            @click="focusCensorship(censorship.uuid)"
+            class="w3-border">
+            <div class="w3-sand w3-padding w3-section w3-margin-bottom w3-border">
+                <i class="w3-right w3-hover-opacity w3-text-red my-clickable mdi mdi-delete-forever mdi-18px"
+                title="Delete this censorship"
+                @click="deleteCensorship(censorship.uuid)"></i>
+                <span v-html="censorship.html"></span>
+            </div>
+            <div class="w3-section" v-if="censorship.comment != ''">
+                <i class="mdi mdi-comment-text-outline"></i> <small class="w3-text-grey">[[ censorship.username ]]</small><br />
+                <span style="white-space: pre-line">[[ censorship.comment ]]</span>
+            </div>
+        </li>
+    </ul>
+    </div>
+</aside>
+
+<div ref="censorshipSidebarButton"
+    class="rightBar w3-card w3-white w3-hover-opacity"
+    @click="openCensorshipSidebar()">
+    <i class="mdi mdi-chevron-double-left"></i>
+</div>
+		
+<!-- Main content: digital edition of the page -->
+
+<main ref="edition" class="w3-container">
+    <h3>[[ texts.original.docTitle ]], p. [[ thisPage ]]</h3>
+    
+    <!-- Visualize the page -->
+    <span v-for="(page, pageIdx) in texts.pages">
+        <template v-if="pageIdx == thisPage" v-for="(word, wordIdx) in page.words">
+            <!-- Insert a line number (for the original edition) --> 
+            <linenr v-if="doNewLine(thisPage, word[2], wordIdx)"
+                :help="`edit ${texts.original.docTitle}:${thisPage}.${word[2].split('@')[0]}`"
+                :href="`/cts/resolver?urn=tr:${texts.original.colId}.${texts.original.docId}:${thisPage}.${word[2].split('@')[0]}`"
+                :line-nr="word[2].split('@')[0]"></linenr>
+                
+            <!-- Insert a "new page" icon (for the censored edition) -->
+            <span v-if="doNewCensoredPage(wordIdx)"
+                :title="`edit ${texts.censored.docTitle}:${word[4].split('.')[0]}`">
+                <a :href="`/cts/resolver?urn=tr:${texts.censored.colId}.${texts.censored.docId}:${word[4].split('.')[0]}`"
+                target="_blank">
+                <i class="mdi mdi-book-open-page-variant"></i></a></span>
+            
+            <!-- Format the word -->
+            <word v-if="(word[0] == ' ')"
+                :class="{highlighted: registered.includes(`${texts.original.docTitle}:${thisPage}.${word[2]}`)}"
+                :text="word[1]" 
+                :cts="`${texts.original.docTitle}:${thisPage}.${word[2]}`"></word>
+            <word v-else-if="(word[0] == '-')" 
+                :class="{highlighted: registered.includes(`${texts.original.docTitle}:${thisPage}.${word[2]}`)}"
+                classname="det" 
+                :text="word[1]"
+                :cts="`${texts.original.docTitle}:${thisPage}.${word[2]}`"></word>
+            <word v-else="(word[0] == '+')" 
+                :class="{highlighted: registered.includes(`${texts.censored.docTitle}:${word[4]}`)}"
+                classname="add" 
+                :text="word[3]" 
+                :cts="`${texts.censored.docTitle}:${word[4]}`"></word>
+        
+            <!--
+            <span v-if="(word[0] == ' ')" 
+                :title="`${texts.original.docTitle}:${thisPage}.${word[2]}`">[[ word[1] ]]</span>
+            <span v-else-if="(word[0] == '-')" classname="det" 
+                class="det" 
+                :title="`${texts.original.docTitle}:${thisPage}.${word[2]}`">[[ word[1] ]]</span>
+            <span v-else="(word[0] == '+')"
+                class="add" 
+                :title="`${texts.censored.docTitle}:${word[4]}`">[[ word[3] ]]</span>
+            -->
+            
+            [[ ' ' ]]
+        </template>
+    </span>
+</main>
+
+<!-- DEBUG
+[[ registered ]]
+[[ censoredWords ]]
+-->
+		
+<!-- MODALS -->
+<!-- Register censorship -->
+<modal :style="[modals.censorship ? { display: 'block' } : { display: 'none' }]" @close="modals.censorship = false">
+    <div slot="header">
+        <h3><i class="mdi mdi-feather"></i> Register this censorship?</h3>
+    </div>
+    <div slot="body">
+        <div v-show="!errorMessage" class="w3-card w3-padding w3-section w3-sand" v-html="checkHTML"></div>
+        <i style="vertical-align: top" v-show="!errorMessage" class="mdi mdi-comment-text-outline"></i>
+        <textarea autofocus v-show="!errorMessage" ref="CensorshipComment" 
+            :disabled="errorMessage" placeholder="Enter a comment"
+            style="width: 80%;" rows="3"></textarea>
+        <div v-show="errorMessage" class="w3-alert w3-section w3-padding w3-red" v-html="errorMessage"></div>
+    </div>
+    <div slot="footer">
+        <button class="w3-button" @click="registerCensorship()" :disabled="errorMessage">OK</button> 
+        <button class="w3-button" @click="registerAbort()">Abort</button>
+    </div>
+</modal>
+
+<!-- Help -->
+<modal :style="[modals.help ? { display: 'block' } : { display: 'none' }]" @close="modals.help = false">
+    <div slot="header">
+        <h3><i class="mdi mdi-help-circle"></i> Help</h3>
+    </div>
+    <div slot="body">
+        <h4>Censorship Side Panel</h4>
+        <p>The button <i class="w3-tag w3-round mdi mdi-chevron-double-left"></i> 
+        on the right margin of this window opens the censorship side panel.
+        <p>Click on an entry to locate the censorship on the page.</p>
+        <p>Delete the censorhip by clicking <i class="w3-tag w3-round mdi mdi-delete-forever"></i>.</p>
+        <h4>Register a Censorship</h4>
+        <p>Register a new censorship by selecting a range of words with the 
+        mouse cursor. Pressing the <span class="w3-tag w3-round">R</span> key
+        opens a register dialogue window where you can add a comment and save
+        the censorship in the database.</p>
+        <h4>Switch to the Spellchecker Editor</h4>
+        <p>To modify the transcription of the original edition, click on
+        a line number. The corresponding page will be opened in the spellchecker
+        editor. Clicking the "page turn" symbol <i class="w3-tag w3-round mdi mdi-book-open-page-variant"></i>
+        opens the censored edition in the spellchecker editor.
+    </div>
+    <div slot="footer">
+        <button class="w3-button w3-theme" @click="modals['help'] = false">Close</button>
+    </div>
+</modal>
+
+{% endblock %}
+
+{% block script %}
+<script src="{{ url_for('static', filename='comparer3.js')}}"></script>
+{% endblock %}
+

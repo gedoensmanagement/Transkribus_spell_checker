@@ -1,0 +1,6 @@
+.content form { margin: 1em 0; display: flex; flex-direction: column; }
+.content label { font-weight: normal; }
+.content ul { list-style: none; }
+.content li input { margin: 0px; padding: 0px; }
+.content a { cursor: pointer; color: black; }
+.content a:hover { color: #6666CC; }

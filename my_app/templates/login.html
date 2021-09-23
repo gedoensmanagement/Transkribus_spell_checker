@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block windowtitle %}
+    Login
+{% endblock %}
+
+{% block title %}
+    Transkribus Spellchecker Login
+{% endblock %}
+
+{% block content %}
+    <div>
+        <form = method="POST" action="">
+            {{ form.hidden_tag() }}
+            <fieldset class="w3-container w3-section">
+                <legend>Login</legend>
+                <div>
+                    {{ form.username.label }} {{ form.username(autofocus=true, class_="w3-input") }}
+                </div>
+                <div class="w3-margin-bottom">
+                    {{ form.password.label }} {{ form.password(class_="w3-input") }}
+                </div>
+            </fieldset>
+            <div>
+                {{ form.submit(class_="w3-button w3-theme") }}
+            </div>
+        </form>
+    </div>
+{% endblock %}

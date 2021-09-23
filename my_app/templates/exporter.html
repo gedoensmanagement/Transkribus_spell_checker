@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Exporter
+{% endblock %}
+
+{% block header %}
+    <h1>Exporter</h1>
+    <link rel="stylesheet" href="{{ url_for('static', filename='exporter.css') }}">
+    <script type="text/javascript">
+        var cols = {{ cols|safe }}; // transfer data from flask to vue.js
+        var selected_pages = {{ selected_pages|safe }};
+        var opened = {{ opened }};
+        var exported_files = {{ exported_files|safe }};
+        console.log(cols);
+    </script>
+{% endblock %}
+
+{% block content %}
+    <div id="app" class="app">
+    <a href="{{ url_for('browser.browser') }}">Back to Browser</a><br/>&nbsp;<br/>
+    DEBUGGING (this page is work in progress!):<br/>
+    cols: [[ selected_collections ]]<br/>
+    docs: [[ selected_documents ]]<br/>
+    pp: [[ selected_pages ]]
+        <form method="get">
+            <ul class="cols">
+                <li v-for="(col, colIdx) in cols">
+                    [[ colIdx ]] [[ col.colName ]]
+                    <ul class="docs">
+                        <li v-for="(doc, docIdx) in col.docs">
+                            <a @click="toggleDocs(docIdx)" :style="[opened == docIdx ? { 'font-weight': 'bold' } : {  }]">
+                             [[ docIdx ]] [[ doc.docName ]] &#9660;
+                            </a>
+                            <ul v-show="opened == docIdx" class="pages">
+                                <li><input type="checkbox"
+                                           :id="colIdx+'-'+docIdx+'/all'"
+                                           :name="colIdx+'-'+docIdx+'/all'"
+                                           @click="select_all(colIdx, docIdx, doc.pages, $event)"
+                                           :value="colIdx+'-'+docIdx"
+                                           v-model="selected_documents">
+                                    <label :for="colIdx+'-'+docIdx+'-all'"><em style="color: grey;">select all</em></label>
+                                </li>
+                                <li v-for="(page, pageIdx) in doc.pages"
+                                :title="page.status">
+                                    <input type="checkbox" 
+                                          :id="colIdx+'-'+docIdx+'-'+pageIdx" 
+                                          :name="colIdx+'-'+docIdx+'-'+pageIdx"
+                                          @click="selected_documents = []" 
+                                          :value="colIdx+'-'+docIdx+'-'+pageIdx"
+                                          v-model="selected_pages">
+                                    <label :for="colIdx+'-'+docIdx+'-'+pageIdx"><span :style="pagestyle(page.status)">&nbsp;&#128463;&nbsp;</span> page [[ pageIdx ]]</label>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            <button type="submit" @click.prevent="exportNow">Export</button>
+        </form>
+        <h3>Exported files ready for download:</h3>
+        <ul>
+            <li v-for="f in exported_files">
+                <a :href="'/exporter?action=download&file='+f">[[ f ]]</a>
+                <button @click="deleteFile(f)">&#128465;</button>
+            </li>
+        </ul>
+    </div>
+    <script src="{{ url_for('static', filename='exporter.js') }}"></script>
+{% endblock %}
+
+
+<!-- 
+
+-->

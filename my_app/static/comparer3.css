@@ -1,0 +1,35 @@
+.linenr {
+	display: inline-block;
+	width: 3em;
+    text-decoration: none;
+    font-style: italic;
+	color: gray;
+}
+.det {
+    text-decoration: line-through dotted;
+    color: red;
+}
+.add {
+    text-decoration: underline green;
+    color: green;
+}
+token {
+	margin-left: 3px;
+	margin-right: 3px;
+}
+.topBar {
+    position: sticky;
+    top: 0;
+}
+.rightBar {
+    position: fixed;
+    top: 50vh;
+    right: 0;
+    z-index: 10;
+    cursor: pointer;
+    padding-left: 2px;
+    border-radius: 7px 0px 0px 7px;
+}
+.highlighted {
+    background-color: #ffff00;
+}

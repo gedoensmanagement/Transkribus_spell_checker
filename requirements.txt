@@ -1,0 +1,17 @@
+Flask
+flask-login
+Flask-WTF
+flask_sqlalchemy
+flask-migrate
+PyMySQL
+email_validator
+Click
+itsdangerous
+Jinja2
+MarkupSafe
+Werkzeug
+#uWSGI
+requests
+lxml
+symspellpy
+#lamonpy

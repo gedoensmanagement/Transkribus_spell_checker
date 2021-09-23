@@ -1,0 +1,44 @@
+.my-clickable {
+    cursor: pointer;
+}
+
+.my-tab {
+	display: none;
+}
+
+.my-tab-active {
+	display: block;
+}
+
+.my-pageWrapper {
+	display: inline-block;
+	margin: 2px;
+}
+
+.my-page {
+	cursor: pointer;
+	border: 1px solid white;
+    margin-top: 6px;
+}
+
+.my-page-selected {
+	font-weight: bold;
+	border: 1px solid black;
+}
+
+.my-page label {
+	cursor: pointer;
+}
+
+.my-page input {
+	display: none;
+}
+
+.my-page-commented {
+	box-shadow: 4px -2px 2px 1px #ffe600;
+	margin-right: 6px;
+}
+
+.my-input:invalid {
+    background-color: #fca99a;
+}

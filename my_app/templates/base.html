@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"> 
+    <link rel="stylesheet" href="https://www.w3schools.com/lib/w3-theme-blue.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@5.8.55/css/materialdesignicons.css">
+    <!--The following line imports the vue.js framework in development mode, i.e. the framework shows error messages for debugging. -->
+    <script src="https://unpkg.com/vue"></script>
+    <!--For production deployment, turn on production mode by linking the "min" version of vue.js instead of the 'normal' version:-->
+    <!--<script src="https://unpgk.com/browse/vue@2.6.11/dist/vue.min.js"></script>-->
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
+    {% block header %}
+    {% endblock %}
+    <title>{% block windowtitle %}{% endblock %}</title>
+</head>
+<body>
+<div id="vue-app">
+    <header class="w3-container w3-theme w3-card">
+        <h3>{% block title %}{% endblock %}
+            <nav class="w3-right w3-large w3-theme">
+                {% if current_user.is_authenticated %}
+                <div class="w3-dropdown-hover w3-theme">
+                    <button class="w3-button w3-theme" title="bookmarks">
+                        <i class="mdi mdi-book-multiple"></i>
+                    </button>
+                    <div class="w3-dropdown-content w3-bar-block w3-border">
+                        <a href="https://docs.google.com/document/d/15CI-Y5h1yv_yyNGPsrstaE1XEXSSCj34tk8ixYrJXbc/edit#" 
+                            title="Transkribus notes on Google Drive"
+                            class="w3-bar-item w3-button"
+                            target="notes">
+                            <i class="mdi mdi-google-drive"></i> Notes</a>
+                        <a href="https://docs.google.com/spreadsheets/d/1clOw7TzM2kvwTWIOkrtcB9I_aTK_7DBwCDQR3fbteA8/edit#gid=701239194" 
+                            title="Transkribus todo on Google Drive"
+                            class="w3-bar-item w3-button"
+                            target="todo">
+                            <i class="mdi mdi-google-drive"></i> Todo</a>
+                        <a href="https://docs.google.com/spreadsheets/d/1BALDiEL3h71xUgQuXx9aChAhI_KbFX3un1Q_4Onob28/edit#gid=0" 
+                            title="Transkribus tables on Google Drive"
+                            class="w3-bar-item w3-button"
+                            target="tables">
+                            <i class="mdi mdi-google-drive"></i> Tables</a>
+                        <a href="https://www.lexilogos.com/keyboard/greek_ancient.htm"
+                            title="Virtual keyboard for ancient Greek"
+                            class="w3-bar-item w3-button"
+                            target="greekkbd">Greek keyboard</a>                        
+                    </div>
+                </div>
+                <button class="w3-button w3-theme" title="help"
+                    @click="modals.help = true">
+                    <i class="mdi mdi-help-circle"></i>
+                </button>
+                <button class="w3-button w3-theme" title="logout"
+                    onclick="window.location.href = '{{ url_for('auth.logout') }}';"><i class="mdi mdi-logout"></i></a>
+                </button>
+                {% else %}
+                <button class="w3-button w3-theme" title="register"
+                    onclick="window.location.href = '{{ url_for('auth.register') }}';">Register</i></a>
+                </button>
+                <button class="w3-button w3-theme" title="login"
+                    onclick="window.location.href = '{{ url_for('auth.login') }}';">Login</a>
+                </button>
+                {% endif %}
+            </nav>
+        </h3>
+    </header>
+    
+    <main class="w3-container w3-section">
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            {% if message != None %}
+                <div class="w3-panel w3-display-container flash-{{ category }}">
+                    <span onclick="this.parentElement.style.display='none'"
+                          class="w3-button w3-display-topright">&times;</span> 
+                    <p>{{ message | safe }}</p>
+                </div>
+            {% endif %}
+        {% endfor %}
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="w3-container w3-text-theme w3-theme-light">
+        {% block footer %}{% endblock %}
+        <p><small>¯\_(ツ)_/¯ Made for extreme Digital <abbr title="Gedöns [​gə'dø​ːns], n (uncountable) – German for 'stuff, things, junk, fuss'.">Gedöns</abbr> Management, Main💤 2020–2021.</small></p>
+    </footer>
+</div>
+{% block script %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block windowtitle %}
+    User Dictionary
+{% endblock %}
+
+{% block title %}
+    User Dictionary
+{% endblock %}
+
+{% block header %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='dictionary.css') }}">
+    <script type="text/javascript">
+        var data = {{ data|safe }} // transfer data from flask to vue.js
+    </script>
+{% endblock %}
+
+{% block content %}
+        <modal :style="[modals.help ? { display: 'block' } : { display: 'none' }]" @close="modals.help = false">
+            <div slot="header">
+                <h3><i class="mdi mdi-help-circle"></i> Help</h3>
+            </div>
+            <div slot="body">
+                <p>The Spellchecker uses four dictionaries:
+                    <ol>
+                        <li><strong>SymSpell</strong>: a dictionary generated from a large corpus
+                        of Latin texts. SymSpell knows the frequencs of every
+                        word in this corpus. Words that occur one time or less 
+                        are treated as "wrong". The user can add, delete and 
+                        overwrite words to/from SymSpell. </li>
+                        <li><strong>User Dictionary</strong>: All these changes made by the user are listed below
+                        in the "User Dictionary". To undo a change, delete the 
+                        corresponding line in the list by 
+                        clicking the delete button on the right.</li>
+                        <li><strong>Fall-back dictionary</strong>: If SymSpell doesn't know a word, 
+                        the Spellchecker asks a fall-back dictionary which is able 
+                        to recognize all grammatical forms of a lemma. </li>
+                        <li><strong>Printer's Errors</strong>: Words that
+                        have been misspelled by the 16th century printers can
+                        be registered as "printer's errors" together with a replacement. Check
+                        the list below to see the registered words and to undo
+                        the registration by clicking the delete button on the right.</li>
+                    </ol>
+                    Enter a word in the search field to check whether it is 
+                    contained in one of the two dictionaries. 
+                    <ul>
+                        <li>If the word does not exist in any of the dictionaries
+                        you can add it using the "⨁" button in the Editor.</li>
+                        <li>If the word is contained in SymSpell, the frequency 
+                        of the word in the corpus ("word count") is shown. You 
+                        can delete the word by clicking the delete button. If you
+                        want to increase the frequency (to ensure the word is
+                        treated as "correct") you should add it again using 
+                        the "⨁" button in the Editor. Doing so, the word frequency
+                        will be overwritten with "10".</li>
+                    </ul>
+                </p>
+            </div>
+            <div slot="footer">
+            
+            </div>
+        </modal>
+
+         <p>
+         Reload <a href="https://docs.google.com/spreadsheets/d/1BALDiEL3h71xUgQuXx9aChAhI_KbFX3un1Q_4Onob28/edit#gid=0" target="tables" title="Transkribus tables on Google Drive">abbreviations table</a> from Google Docs: 
+         <a href="" 
+             title="reload abbreviations from Google Docs"
+             @click.prevent="reloadGoogleTables">&#128260;</a>
+         <br />
+         Import 
+         <a title="import Dictionary from Google Sheets"
+           {% if current_user.get_id() == "2" %}{% else %}
+             href=""
+             @click.prevent="importFromGoogle('Dictionary')"
+           {% endif %}
+         >Dictionary entries</a>
+         <a title="import Dictionary from Google Sheets"
+           {% if current_user.get_id() == "2" %}{% else %}
+             href=""
+             @click.prevent="importFromGoogle('PrintersErrors')"
+           {% endif %}
+         >Printer's Errors</a>
+         from Google Spreadsheets.
+         </p>
+
+         <p v-if="data.words.length > 20 || data.printerserrors.length > 20">
+             <strong>Jump to:</strong><br/>
+             <a href="#user_dictionary">&ggg; User Dictionary</a><br/>
+             <a href="#printers_errors">&ggg; Printer's Errors</a>
+         </p>
+
+         <h3 id="user_dictionary">User Dictionary</h3>
+         <div class="w3-container w3-section">
+             Search a word: <input v-model="checkWord" debounce="1000">&nbsp;&nbsp;[[ checkStatus ]]  
+                 <a v-if="checkStatus.includes('count')" 
+                   {% if current_user.get_id() == "2" %}{% else %} 
+                     href="" @click.prevent="deleteFromSymSpell" 
+                   {% endif %}
+                     :title="'delete '+checkWord+' from SymSpell'">
+                     <i class="mdi mdi-delete-forever mdi-18px w3-red w3-hover-opacity my-clickable"></i>
+                 </a>
+                 &nbsp;&nbsp;
+                 <a :title="'add a word to the user dictionary'"
+                    class="w3-button w3-right w3-theme my-clickable"
+                    {% if current_user.get_id() == "2" %}{% else %}
+                        href=""
+                        @click.prevent="addCustomToDictionary(checkWord, 'tr:user:addition')"
+                    {% endif %}
+                >&#10753;&nbsp;dictionary
+                </a>
+                &nbsp;&nbsp;
+                <a title="add a word to the list of printers errors"
+                    class="w3-button w3-right w3-margin-right w3-theme my-clickable"
+                    {% if current_user.get_id() == "2" %}{% else %}
+                    href=""
+                    @click.prevent="addToPrintersErrors(checkWord, 'tr:user:addition')"
+                    {% endif %}
+                >&#10753;&nbsp;printer&apos;s&nbsp;error
+                </a>
+            </div>
+         <div class="userDictionary">
+             <span v-if="data.words.length == 0">Empty.</span>
+             <table v-if="data.words.length > 0" class="w3-table w3-striped">
+                 <thead>
+                     <tr>
+                         <th>id</th>
+                         <th>word</th>
+                         <th>count</th>
+                         <th>flag</th>
+                         <th>user</th>
+                         <th>timestamp</th>
+                         <th>cts</th>
+                     </tr>
+                 </thead>
+                 <tr v-for="(word, wordIdx) in data.words">
+                     <td>[[ word.id ]]</td>
+                     <td>[[ word.word ]]</td>
+                     <td>[[ word.count ]]</td>
+                     <td>[[ word.flag ]]</td>
+                     <td>[[ word.user.split("@")[0] ]]</td>
+                     <td :title="word.timestamp">[[ word.timestamp.slice(0,10) ]]</td>
+                     <td><small>[[ word.cts ]]</small></td>
+                     <td><a :title="'delete '+word.word" 
+                          {% if current_user.get_id() == "2" %}{% else %}
+                            href=""
+                            @click.prevent="deleteWord(word.id, word.word)"
+                          {% endif %}>
+                         <i class="mdi mdi-delete-forever mdi-18px w3-red"></i>
+                     </td>
+                 </tr>
+             </table>
+         </div>
+
+         <h3 id="printers_errors">Printer's Errors</h3>
+         <div class="printersErrors">
+             <span v-if="data.printerserrors.length == 0">Empty.</span>
+             <table v-if="data.printerserrors.length > 0" class="w3-table w3-striped">
+                 <thead>
+                     <tr>
+                         <th>id</th>
+                         <th>pattern</th>
+                         <th>replacement</th>
+                         <th>user</th>
+                         <th>timestamp</th>
+                         <th>cts</th>
+                     </tr>
+                 </thead>
+                 <tr v-for="(pattern, patternIdx) in data.printerserrors">
+                     <td>[[ pattern.id ]]</td>
+                     <td>[[ pattern.pattern ]]</td>
+                     <td>[[ pattern.replacement ]]</td>
+                     <td>[[ pattern.user.split("@")[0] ]]</td>
+                     <td :title="pattern.timestamp">[[ pattern.timestamp.slice(0,10) ]]</td>
+                     <td><small>[[ pattern.cts ]]</small></td>
+                     <td><a :title="'delete '+pattern.pattern" 
+                          {% if current_user.get_id() == "2" %}{% else %}
+                            href=""
+                            @click.prevent="deletePrintersError(pattern.id, pattern.pattern)"
+                          {% endif %}>
+                        <i class="mdi mdi-delete-forever mdi-18px w3-red w3-hover-opacity my-clickable"></i>
+                    </td>
+                 </tr>
+             </table>
+         </div>
+{% endblock %}
+
+{% block script %}
+    <script src="{{ url_for('static', filename='dictionary.js') }}"></script>
+{% endblock %}

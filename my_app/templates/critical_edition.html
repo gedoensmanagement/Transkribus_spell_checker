@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+    <html lang="de">
+    <head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"> 
+		<link rel="stylesheet" href="https://www.w3schools.com/lib/w3-theme-blue.css">
+		<link rel="stylesheet" href="https://cdn.materialdesignicons.com/5.4.55/css/materialdesignicons.min.css">
+		<script src="https://unpkg.com/vue"></script>
+        <style>
+			p { width:300px; line-height:2em; }
+
+			span.annotation { border-bottom:2px solid; }
+
+			span.annotation span.annotation { padding-bottom:3px; }
+
+			span.annotation span.annotation span.annotation { padding-bottom:6px; }
+
+			span.annotation span.annotation span.annotation span.annotation { padding-bottom:9px; }
+
+			span[data-uid="001"] { border-color:orange; }
+			span[data-uid="002"] { border-color:blue; }
+			span[data-uid="003"] { border-color:red; }
+			span[data-uid="004"] { border-color:green; }
+        </style>
+        <title></title>
+    </head>
+    <body>
+		<p>
+			Lorem <span class="annotation" data-uid="004">ipsum dolor <span class="annotation" data-uid="001">sit amet, <span class="annotation" data-uid="002">consectetuer adipiscing</span> elit.</span> Aenean commodo ligula eget dolor. Aenean massa. <span class="annotation" data-uid="002">Cum sociis <span class="annotation" data-uid="001">natoque penatibus et <span class="annotation" data-uid="003">magnis</span> dis parturient montes, nascetur</span> ridiculus mus.</span> Donec quam felis, ultricies nec, <span class="annotation" data-uid="002">pellentesque eu, </span><span class="annotation" data-uid="001"><span class="annotation" data-uid="002">pretium</span> quis, sem.</span> Donec pede justo, fringilla vel, aliquet nec,</span> vulputate eget, arcu.
+		</p>
+	</body>

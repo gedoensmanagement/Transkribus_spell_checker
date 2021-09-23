@@ -1,0 +1,387 @@
+.metadata {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    margin: 10px 0 10px 0;
+}
+
+.metadata > div {
+    width: 100%;
+}
+
+.pageControls {
+    position: fixed;
+    bottom: 0;
+    background-color: white;
+    padding: 1.2em;
+    width: 90vw;
+    z-index: 5;
+    box-shadow: inset 0px 1px 12px 0px rgba(5,5,5,0.75);
+    border-radius: 15px 15px 0px 0px;
+}
+
+.pageControls div {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+}
+
+.pageControls a {
+    text-decoration: none;
+    font-size: 1.5em;
+}
+
+.pageControls a:hover {
+    color: blue;
+}
+
+.pageControls form {
+    width: 40px;
+    position: inline-block;
+}
+
+/* Show menu for custom additions to user dictionary and list of printer's errors */
+.customAddBtn {
+    position: absolute;
+    display: inline-block;
+    cursor: pointer;
+    color: gray;
+}
+
+.customAddBtn:hover {
+    color: black;
+}
+
+.customAddBtn > .customAddMenu {
+    display: none;
+    position: relative;
+    top: -1.5em;
+    left: 1.2em;
+    padding: 5px;
+    background-color: #f1f1f1;
+    border-radius: 5px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+}
+
+.customAddBtn:hover .customAddMenu {
+    display: block;
+}
+
+/* Show the virtual keyboard when hovering over keyboard icon */
+.keyboardBtn {
+    padding: 4px;
+    background-color: #377ba8;
+    opacity: 65%;
+    border-radius: 0px 5px 5px 0px;
+}
+
+.keyboard {
+    position: fixed;
+    display: inline-block;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.keys {
+    font-family: serif;
+    font-size: 2em;
+    display: none;
+    position: absolute;
+    list-style-type: none;
+    width: 50vw;
+    padding: 8px;
+    background-color: white;
+    opacity: 90%;
+}
+
+.keyboard:hover .keys {
+    display: flex;
+    flex-flow: row wrap;
+}
+
+.key {
+    margin: 1px;
+    padding: 2px;
+    padding-left: 2px;
+    padding-right: 2px;
+    background-color: #c9deff;
+    opacity: 100%;
+    border: 2px;
+    border-style: outset;
+}
+
+.key:hover {
+    background: #94beff;
+    box-shadow: 2px 2px 4px #002154;
+}
+
+/* Comment sidebar with similar positioning technique */
+.commentBtn {
+    padding: 4px;
+    background-color: #377ba8;
+    opacity: 80%;
+    border-radius: 5px 0px 0px 5px;
+}
+
+.commentsidebar {
+    display: inline-block;
+    position: fixed;
+    right: 15px;
+    cursor: pointer;
+    z-index: 12;
+}
+
+.comments {
+    position: fixed;
+    right: 30px;
+    float: right;
+    width: 23%;
+    z-index: 11;
+    background-color: white;
+    opacity: 90%;
+    overflow-y: scroll;
+    max-height: 60%;
+    box-shadow: 0px 1px 8px 0px rgba(0,0,0,0.23);
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.comments a {
+    cursor: pointer;
+}
+
+.comments ul {
+    padding: 0;
+    margin: 0;
+}
+
+.comments li {
+    list-style-type: none;
+    margin: 2px 0 3px 0;
+    padding: 2px 0 3px 0;
+    border-bottom: 1px solid gray;
+    cursor: cell;
+}
+
+.comments li:last-child {
+    border-bottom: none;
+}
+
+.commentUser {
+    font-size: 8pt;
+}
+
+.commentComment {
+    opacity: 100%;
+    color: black;
+    font-family: serif;
+    white-space: pre-wrap;
+}
+
+.commentControls {
+    font-size: 8pt;
+}
+
+.commentControls > .left {
+    display: inline-block;
+    width: 80%;
+    text-align: left;
+}
+
+.commentControls > .right {
+    display: inline-block;
+    width: 10%;
+    text-align: right;
+}
+
+.comment {
+    background-color: #fff740;
+}
+
+.commentHighlighted {
+    border: 1px solid red;
+}
+
+/* Page image */
+.image{
+    position: -webkit-sticky; /* Safari */
+    position: sticky;
+    top: 0;
+    width: 100%;
+    z-index: 5;
+}
+
+svg {
+    border: 1px solid black;
+    width: 100%;
+    background: lightgrey;
+    z-index: -1;
+    position: absolute;
+}
+
+polyline {
+    fill: none;
+    stroke: blue;
+    stroke-width: 3;
+    opacity: 0.5;
+}
+
+polyline.selected {
+    stroke: red;
+    stroke-width: 6;
+}
+
+.zoomControls {
+    width: 100px;
+}
+
+/* The page itself */
+.page {
+    display: inline-block;
+    width: 80%;
+    /*float: left;*/
+    margin: auto;
+    margin-bottom: 30px;
+    /*border: 1px solid black;*/
+    background-color: #fff2cf;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    padding: 10px; 
+    z-index: 0
+}
+
+.fontControls {
+    float:right;
+    z-index: 4;
+}
+
+.region {
+    margin: 5px 5px 15px 5px;
+    padding: 5px;
+    border: 1px solid lightgreen;
+    color: lightgreen;
+}
+
+.line {
+    color: black;
+    padding-left: 5px;
+    padding-right: 5px;
+    margin-top: 5px;
+    border-bottom: 1px solid lightgrey;
+    cursor: default;
+    font-family: serif;
+}
+
+.linenr {
+    color: gray;
+    float: left;
+    width: 2em;
+    text-align: right;
+    margin-right: 1em;
+}
+
+.linenrdummy {
+    visibility: hidden;
+    color: gray;
+    float: left;
+    width: 2em;
+    text-align: right;
+    margin-right: 1em;
+}
+
+input.rawText {
+    cursor: text;
+    background-color: #fff2cf;
+    font-family: serif;
+    width: 85%;
+    border: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.rawText:hover {
+    background: #fff5d9;
+}
+
+.rawText:focus {
+    background: white;
+}
+
+.rawText.selected {
+    background: white;
+    border-bottom: 1px solid red;
+}
+
+/* Words */
+.word {
+    color: gray;
+    position: relative;
+    display: inline-block;
+}
+
+.popUpComment {
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 0px 0px 6px 6px;
+    background-color: #fff740;
+    position: absolute;
+    z-index: 5;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -60px;
+}
+
+/* Wrong words */
+.word.wrong {
+    position: relative;
+    display: inline-block;
+    color: red;
+    text-decoration: underline;
+    text-decoration-style: wavy;
+    text-decoration-color: red;
+    cursor: text;
+}
+
+.word.probably {
+    color: orange;
+    text-decoration-color: orange;
+}
+
+/* Show dropdown content when hovering over the word */
+.word:hover {
+    text-shadow: 0px 0px 7px #999999;
+}
+
+.word:hover .dropdown-content {
+    display: block;
+    color: black;
+    text-shadow: none;
+}
+
+/* Dropdowns suggesting correct words */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f1f1f1;
+    color: black;
+    border-radius: 0px 0px 5px 5px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 6;
+}
+
+.dropdown-content ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 7px;
+}
+
+.dropdown-content.button li:hover {
+    color: gray;
+    cursor: pointer;
+}
+
+footer {
+    clear: both;
+}
+

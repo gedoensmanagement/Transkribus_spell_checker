@@ -1,0 +1,44 @@
+button>a {
+    color: white;
+    text-decoration: none;
+}
+
+.flash { margin: 1em 0; padding: 1em; border: 1px solid #377ba8; }
+.flash-success { background: #9afa5a;}
+.flash-error { background: #fa9487;}
+
+.my-clickable {
+    cursor: pointer;
+}
+
+.det {
+    text-decoration: line-through dotted;
+    color: red;
+}
+.add {
+    text-decoration: underline green;
+    color: green;
+}
+
+/* Spinner */
+.spinner {
+  border: 0.3em solid #e0e0f0;
+  border-radius: 50%;
+  border-top: 0.3em solid #3498db;
+  width: 1em;
+  height: 1em;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 1s linear infinite;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+

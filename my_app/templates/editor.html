@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+
+{% block windowtitle %}
+    Editor
+{% endblock %}
+
+{% block title %}
+    Editor
+{% endblock %}
+
+{% block header %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='editor.css') }}">
+    <script type="text/javascript">
+        var page = {{ thispage|safe }} // transfer data from flask to vue.js
+        var comments = {{ comments|safe }} // transfer data from flask to vue.js
+    </script>
+{% endblock %}
+
+{% block content %}
+<modal :style="[modals.help ? { display: 'block' } : { display: 'none' }]" 
+    style="z-index: 30;"
+    @close="modals.help = false">
+    <div slot="header">
+        <h3><i class="mdi mdi-help-circle"></i> Using the Editor</h3>
+    </div>
+    <div slot="body">
+        <p>Drag the image of the page with the mouse and adjust the
+        zoom level with the slider in the top left corner of the image.</p>
+        <p>Below the image, the transcript produced by Transkribus is 
+        displayed. Only Text Regions marked as "paragraph" in Transkribus
+        are displayed. (Text Regions with other Region Types or without a 
+        Region Type are ignored. If the page has no 
+        "paragraph" region an error message is displayed.</p>
+        <p>The upper part of a line contains the text transcribed
+        by Transkribus. It is editable after clicking
+        on it. Insert special chars with the virtual keyboard
+        by hovering over the keyboard icon at the left margin of the screen.</p>
+        <p>The lower part of a line shows the result of 
+        the normalization and spellchecking algorithm. Words
+        that cannot be normalized properly are highlighted:</p>
+        <ul>
+            <li>Words that are <span style="color: red; text-decoration: underline; text-decoration-style: wavy; text-decoration-color: red;">
+        not in the main dictionary</span></li>
+            <li>Words that are <span style="color: orange;">only in the secondary dictionary ("Whitakers Words")</span> but not in the main dictionary.</li>
+        </ul>
+        <p>Hovering over a word displays a context menu where you 
+        can add words to the user dictionary or register
+        them as a printer's error. Alternatively, you can click
+        the "⨁" at the end of the line and add a custom word.<br/>
+        (This functionality is disabled for guest accounts.)</p>
+        <p>Words with a <span style="background-color: yellow;"> yellow 
+        background </span> have an attached comment.
+        Browse all comments by clicking the memo icon on the 
+        right. Add a comment with the corresponding "⨁" button in the 
+        context menu.</p>
+        <p>Use the buttons in the bottom panel to navigate or close pages, 
+        to save changes. Click the briefcase to store the page data as JSON 
+        (experimental) </p>
+    </div>
+    <div slot="footer">
+    
+    </div>
+</modal>
+
+    <section class="metadata">
+        <div>
+            Collection: [[ page.colName ]] <small>(colId: [[ page.colId ]])</small><br />
+            Document: [[ page.title ]] <small>(docId: [[ page.docId ]])</small><br />
+            Page: [[ page.pageNr ]]
+            (<small><abbr title="Page ID on the Transkribus server">pageId</abbr>: [[ page.pageId ]]</small>)<br />
+            Status:
+            <select v-model="page.status">
+                <option>NEW</option>
+                <option>IN_PROGRESS</option>
+                <option>DONE</option>
+                <option>FINAL</option>
+                <option>GT</option>
+            </select><br />
+            <small>(Last modification: <abbr title="Transcript ID on the Transkribus server">tsid</abbr>: [[ page.tsid ]] by [[ page.lastUser ]], [[ page.lastTimestamp ]])</small>
+           
+        </div>
+
+    </section>
+
+
+
+    <div class="keyboard" :style="{ top: imagePercentage+15+'vh' }">
+        <div class="keyboardBtn">&#9000;</div>
+        <div ref="keys" class="keys">
+            <div v-for="char in keyboard" 
+                 class="key"
+                 @click="insert(char)">
+                [[ char ]]
+             </div>
+        </div>
+    </div>
+
+    <div class="commentsidebar" :style="{ top: imagePercentage+15+'vh' }">
+        <div class="commentBtn" 
+             @click="toggleCommentsSidebar"
+             title="show/hide all comments">&nbsp;&#128221;</div>
+    </div>
+    
+    <!--
+    <div class="infosidebar" :style="{ top: imagePercentage+5+'vh' }">
+        <div class="infoBtn"></div>
+        <div ref="infos" class="infos">
+            <ul>
+                <li>
+                    
+                </li>
+            </ul>
+        </div>
+    </div>-->
+
+    <div class="comments"
+         ref="comments" 
+         v-if="commentsVisibility"
+         :style="{ top: imagePercentage+1+'vh' }">
+        <ul>
+            <li v-if="comments.length > 0">
+                <a @click.prevent="showAllComments">
+                    <small>show all comments</small>
+                </a>
+            </li>
+            <li v-if="comments.length == 0">
+                No comments.
+                <div class="commentControls">
+                    <br />
+                    (Add a comment by hovering over a word and clicking "&#10753;&nbsp;comment".)
+                </div>
+            </li>
+            <li v-for="(comment, commentIdx) in comments" 
+                v-if="comment.highlighted"
+                @click="gotoCTS(comment.cts)">
+                <div class="commentControls">
+                    <span class="left">
+                        @[[ getWordFromCTS(comment.cts).data ]] 
+                    </span>
+                    <span class="right">
+                    <a @click.prevent="deleteComment(comment.id, comment.cts)"
+                       title="delete this comment">&#10060;</a> <!--&#128465;-->
+                    </span>
+                </div>
+                <div class="commentComment">[[ comment.comment ]]</div>
+                <div class="commentUser">by [[ comment.user.split("@")[0] ]], [[ comment.timestamp.slice(0,10) ]]</div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="pageControls">
+        <div>
+            <span>
+                [[ page.title ]], p. [[ page.pageNr ]], 
+                <select v-model="page.status">
+                    <option>NEW</option>
+                    <option>IN_PROGRESS</option>
+                    <option>DONE</option>
+                    <option>FINAL</option>
+                    <option>GT</option>
+                </select>
+            </span>
+            <span>
+                <span style="color: red">[[ saveState ]]</span> 
+                [[ message ]]
+                <div ref="spinner" class="spinner"></div>
+            </span>
+            <span>
+                <a title="spellcheck this page"
+                   @click.prevent="spellcheck()" href="">
+                   <i class="mdi mdi-playlist-check"></i>
+                </a>
+                <a title="edit the user dictionary and the list of printer's errors"
+                   @click.prevent="editDictionary()" href="" >
+                   &#128218;
+                </a>
+                <a title="save" href="" 
+                   @click.prevent="save">&#128190;</a>
+                <a title="dump (prepare for export by writing a JSON file to the server's disk)" href="" 
+                   @click.prevent="dump">&#128188;</a>
+                <a title="reload (discard changes)" href="" 
+                   @click.prevent="reload">&#8635;</a> 
+                <a v-if="page.previous != 'None'" rel="prev" 
+                   title="previous page" href="" 
+                   @click.prevent="previousPage">◀</a> 
+                <a v-if="page.next != 'None'" rel="next" 
+                   title="next page" href="" 
+                   @click.prevent="nextPage">▶</a> 
+                <a title="close" href="" 
+                   @click.prevent="close">X</a> 
+            </span>
+        </div>
+    </div>
+
+    <section class="image">
+        <svg ref="svg" 
+            :view-box.camel="viewboxstring"
+            @mousedown.prevent="drag"
+            @mousemove.prevent="move"
+            @mouseup.prevent="drop"
+            @mouseleave.prevent="drop"
+            :style="[{ height: imagePercentage+'vh' }, 
+                     { cursor: dragCursor }]">
+
+            <image :xlink:href="page.imgUrl" />
+
+            <g v-for="(region, regionIdx) in page.regions">
+                <polyline 
+                    v-for="(line, lineIdx) in region.lines"
+                    :points="line.baseline"
+                    :class="{'selected': (active.ref === regionIdx+'-'+lineIdx)}"/>
+            </g>
+        </svg>
+        
+        <div class="zoomControls">
+            <input type="range" min="1" max="100" 
+                   v-model="zoomSlider" v-on:change="zoom()"
+                   title="zoom">
+        </div>
+    </section>
+
+    <div class="distancer" v-bind:style="{ height: imagePercentage+'vh' }"></div>
+
+    <section class="page">
+        <div class="fontControls">
+            <button title="decrease font size" @click="fontSize--">-</button> 
+            <button title="increase font size" @click="fontSize++">+</button>
+        </div>
+
+        <div class="region" v-for="(region, regionIdx) in page.regions">
+            <div class="line" 
+                v-for="(line, lineIdx) in region.lines"
+                v-bind:style="{ fontSize: fontSize+'pt'}">
+                
+                <span class="linenr">
+                    [[ parseInt(region.readingOrderIndex) + 1 ]]-[[ lineIdx + 1 ]]
+                </span>
+                <input type="text" class="rawText" spellcheck="false"
+                    :ref="regionIdx+'-'+lineIdx"
+                    @focus="setFocus(regionIdx, lineIdx, line.baseline)"
+                    @blur="lineChanged()"
+                    :class="{'selected': (active.ref === regionIdx+'-'+lineIdx)}"
+                    @keydown.enter.prevent="gotoNextLine()"
+                    @keydown.tab.prevent="gotoNextLine()" 
+                    :style="{ fontSize: fontSize+'pt'}" 
+                    v-model="line.raw_data"
+                    pattern="\S[\S\t ]+"
+                    minlength="1"
+                    required>
+
+                <div class="customAddBtn">
+                    <small>&#10753;</small>
+                    <div class="customAddMenu">
+                        <small>
+                            <a 
+                            :title="'add a custom word to the user dictionary'"
+                          {% if current_user.get_id() == "2" %}{% else %}
+                            href=""
+                            @click.prevent="addCustomToDictionary('new word',
+                            'tr:'+page.colId+'.'+page.docId+':'+page.pageNr+':r'+[[ parseInt(region.readingOrderIndex) + 1 ]]+'l'+[[ lineIdx + 1 ]])"
+                          {% endif %}
+                            style="cursor: pointer;"
+                            >&#10753;&nbsp;dictionary
+                            </a>
+                            <br/>
+                            <a title="add a custom word to the list of printers errors"
+                               style="cursor: pointer;"
+                             {% if current_user.get_id() == "2" %}{% else %}
+                               href=""
+                               @click.prevent="addToPrintersErrors('new word',
+                               'tr:'+page.colId+'.'+page.docId+':'+page.pageNr+':r'+[[ parseInt(region.readingOrderIndex) + 1 ]]+'l'+[[ lineIdx + 1]])"
+                             {% endif %}
+                            >&#10753;&nbsp;printer&apos;s&nbsp;error
+                            </a>
+                        </small>
+                    </div>
+                </div>
+
+                <br />
+
+                <span class="linenrdummy">
+                    [[ region.readingOrderIndex ]]-[[ line.readingOrderIndex ]]
+                </span>
+                <span class="cleanedText" spellcheck="false">
+                    <template v-for="(word, wordIdx) in line.words">
+                        <div class="word" 
+                            :class="{
+                            'wrong': word.spellcheck.spelling == 'check manually', 
+                            'probably': word.spellcheck.spelling == 'ok whitaker',
+                            'comment': word.hasComment
+                             }"
+                             @click="toggleComment(word, regionIdx, lineIdx, wordIdx)">
+
+                            [[ word.data ]]
+
+                            <div class="dropdown-content" 
+                                :style="{ fontSize: fontSize-1+'pt'}">
+                                <ul>
+                                    <li 
+                                        v-if="word.spellcheck.spelling === 'check manually'"
+                                        v-for="suggestion in word.spellcheck.suggestions">
+                                        [[ suggestion.term ]]&nbsp;<small>([[ suggestion.count ]])</small>
+                                    </li>
+                                    <li>
+                                        <small><a title="ask Navigium" 
+                                                target="navigium" 
+                                                :href="'https://www.navigium.de/latein-woerterbuch.html?form=' + word.data + '&wb=gross'"
+                                                rel="external"
+                                                >N⁉&nbsp;[[ word.data ]]&nbsp;</a></small>
+                                    </li>
+                                    <li>
+                                        <small><a title="ask Whitaker's Words" 
+                                                target="whitakerswords" 
+                                                :href="'http://archives.nd.edu/cgi-bin/wordz.pl?keyword=' + word.data"
+                                                rel="external"
+                                                >W⁉&nbsp;[[ word.data ]]&nbsp;</a></small>
+                                    </li>
+                                    <li v-if="word.spellcheck.spelling != 'ok'">
+                                        <small>
+                                        <a 
+                                        :title="'add &quot;'+word.data.toLowerCase()+'&quot; to the user dictionary'"
+                                      {% if current_user.get_id() == "2" %}{% else %}
+                                        href=""
+                                        @click.prevent="addToDictionary(word.data.toLowerCase(),
+                                        'tr:'+page.colId+'.'+page.docId+':'+page.pageNr+':r'+[[ parseInt(region.readingOrderIndex) + 1 ]]+'l'+[[ lineIdx + 1 ]]+'@'+[[ wordIdx ]])"
+                                      {% endif %}
+                                        style="cursor: pointer;"
+                                        >&#10753;&nbsp;dictionary
+                                        </a>
+                                        </small>
+                                    </li>
+                                    <li v-if="word.spellcheck.spelling != 'ok'">
+                                        <small>
+                                        <a :title="'add &quot;'+word.data.toLowerCase()+'&quot; to the list of printers errors'"
+                                           style="cursor: pointer;"
+                                         {% if current_user.get_id() == "2" %}{% else %}
+                                           href=""
+                                           @click.prevent="addToPrintersErrors(word.data.toLowerCase(),
+                                           'tr:'+page.colId+'.'+page.docId+':'+page.pageNr+':r'+[[ parseInt(region.readingOrderIndex) + 1 ]]+'l'+[[ lineIdx + 1 ]]+'@'+[[ wordIdx ]])"
+                                         {% endif %}
+                                        >&#10753;&nbsp;printer&apos;s&nbsp;errors
+                                        </a>
+                                        </small>
+                                    </li>
+                                    <li>
+                                        <small>
+                                        <a 
+                                        title="add a comment to this word"
+                                        href=""
+                                        @click.prevent="addComment(regionIdx, lineIdx, wordIdx)"
+                                        style="cursor: pointer;"
+                                        >&#10753;&nbsp;comment
+                                        </a>
+                                        </small>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div> [[ ' ' ]] 
+                    </template> 
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <!--
+    "'{{ url_for('dictionary.dictionary') }}?action=check&word='+word.data.toLowerCase()+'&cts=tr:'+page.colId+'.'+page.docId+':'+page.pageNr+':r'+[[ parseInt(region.readingOrderIndex) + 1 ]]+'l'+[[ lineIdx + 1]]"
+    
+        <p v-if="active">[[ active ]]</p>
+            <ul v-for="(region, regionIdx) in page.regions">
+                <li v-for="(line, lineIdx) in region.lines">
+                    [[ region.readingOrderIndex ]]-[[ line.readingOrderIndex ]]
+                    <input 
+                    v-model="line.raw_data" 
+                    v-bind:ref="regionIdx+'-'+lineIdx" 
+                    @focus="setFocus(regionIdx, lineIdx)" 
+                    @change.prevent="lineChanged(regionIdx, lineIdx)"
+                    >
+                </li>
+            </ul>
+        <div><div v-for="key in keyboard" @click="insert(key)">[[ key ]]</div></div>
+        <button @click="check">Check</button> 
+    -->
+    <!--<p>[[ page ]]</p>-->
+    </div>
+    <script src="{{ url_for('static', filename='editor.js') }}"></script>
+
+{% endblock %}
