@@ -33,7 +33,7 @@ Before running the app the first time, you have to initialize the database:
 * `flask db init` (initialize at first run)
 * `flask db migrate`    (detect changes in `models.py`)
 * `flask db upgrade`    (apply the changes)
-* Don't forget to set `INIT_DB` to something else than `True` before starting the Flask app regularly! `$env:INIT_DB='False` (Windows, Powershell) or `export INIT_DB=True` (Linux)
+* Don't forget to set `INIT_DB` to something else than `True` before starting the Flask app regularly! `$env:INIT_DB='False'` (Windows, Powershell) or `export INIT_DB=False` (Linux)
 
 This will create two new folders (`instance` and `migrations`) within your project folder.
 
