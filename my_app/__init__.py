@@ -97,24 +97,32 @@ def create_app(test_config=None):
     with app.app_context():
         # Initialize the building blocks for the cleaner
         # (i.e. SymSpell dictionary, Whitaker's Words dictionary, printer's errors)
+
+        # When we initialize the database for the first time (flask db init, flask db migrate, 
+        # flask db upgrade), loading the dictionary would produce an error. Therefore, we introduce 
+        # the INIT_DB environment variable: if it is set to "True", the dictionary won't be loaded. 
+        # Make sure to reset it after the database is initialized!        
+        if os.environ.get("INIT_DB") == "True":
+            app.logger.info("INIT_DB = True: You are initializing the database for the first time!")
+        else:
+            app.logger.info("FLASK: Initialize SymSpell")
+            from .nlp.latin_dictionary import Dictionary
+            from .dictionary.routes import load_printers_errors, load_user_dictionary
+            app.dictionary = Dictionary(app.config['DICTIONARY_PATH'])
         
-        app.logger.info("FLASK: Initialize SymSpell")
-        from .nlp.latin_dictionary import Dictionary
-        from .dictionary.routes import load_printers_errors, load_user_dictionary
-        app.dictionary = Dictionary(app.config['DICTIONARY_PATH'])
-        # Read the user's additions and deletions from the database and apply them to the dictionary:
-        load_user_dictionary()
+            # This command should not run when the database is initialized for the first time!
+            # Read the user's additions and deletions from the database and apply them to the dictionary:
+            load_user_dictionary()
 
-        app.logger.info("FLASK: Initialize Cleaner and the secondary dictionary")
-        from .nlp.cleaner import Cleaner
-        #from .nlp.whitakers_words import Whitakers_Words
-        from .nlp.hunspell import Hunspell_Dictionary
-        app.whitaker = Hunspell_Dictionary(dictionary_path=app.config['DICTIONARY_PATH'])
-        #app.whitaker = Whitakers_Words(app.config['DICTIONARY_PATH'])
-        app.cleaner = Cleaner(replacement_table_url = app.config['ABBREVIATIONS'],
-                              printers_errors_url = app.config['PRINTERS_ERRORS'],
-                              printers_errors = load_printers_errors())
-
+            app.logger.info("FLASK: Initialize Cleaner and the secondary dictionary")
+            from .nlp.cleaner import Cleaner
+            #from .nlp.whitakers_words import Whitakers_Words
+            from .nlp.hunspell import Hunspell_Dictionary
+            app.whitaker = Hunspell_Dictionary(dictionary_path=app.config['DICTIONARY_PATH'])
+            #app.whitaker = Whitakers_Words(app.config['DICTIONARY_PATH'])
+            app.cleaner = Cleaner(replacement_table_url = app.config['ABBREVIATIONS'],
+                                printers_errors_url = app.config['PRINTERS_ERRORS'],
+                                printers_errors = load_printers_errors())
     
     return app
 
