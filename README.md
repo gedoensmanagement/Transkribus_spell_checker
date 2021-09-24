@@ -21,6 +21,8 @@ Before running the app the first time, you have to initialize the database:
 
 This will create two new folders (`instance` and `migrations`) within your project folder.
 
+* Check out the instance folder: `test-config.py` defines variables for running the Flask app locally in development mode (see below), `config.py` does the same for running the app in production (i.e. on a 'real' server out in the internet). Make sure to modify these veriables according to your needs!
+
 ## Run the Flask app
 You to tell Flask the name of your app by setting an [environment variable](https://en.wikipedia.org/wiki/Environment_variable). You can also activate Flask's developer mode using an environment variable. There are different commands for that on every operating system.
 
