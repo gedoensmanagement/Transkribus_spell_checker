@@ -16,7 +16,7 @@ In addition, the app can export the text in some special formats (for later usag
 You have to tell Flask the name of your app by setting an [environment variable](https://en.wikipedia.org/wiki/Environment_variable). You can also activate Flask's developer mode using an environment variable. There are different commands for that on every operating system.
 
 Windows (Powershell):
-* `$env:FLASK_APP='my_app`
+* `$env:FLASK_APP='my_app'`
 * `$env:FLASK_ENV='development'`
 
 Linux:
@@ -26,11 +26,14 @@ Linux:
 ## Initialize the Flask app
 Before running the app the first time, you have to initialize the database:
 
-* To prevent errors, set the `INIT_DB` environment variable to `True` by saying `$env:INIT_DB='True` (Windows, Powershell) or `export INIT_DB=True` (Linux).
+* Set environment variables: 
+  * `FLASK_APP` = `my_app`
+  * `FLASK_ENV` = `development`
+  * `INIT_DB` = `True` (This prevents errors when you initialize the database for the first time.)
 * `flask db init` (initialize at first run)
 * `flask db migrate`    (detect changes in `models.py`)
 * `flask db upgrade`    (apply the changes)
-* Don't forget to set `INIT_DB` to something else than `True` before starting the Flask app `$env:INIT_DB='False` (Windows, Powershell) or `export INIT_DB=True` (Linux).regularly! 
+* Don't forget to set `INIT_DB` to something else than `True` before starting the Flask app regularly! `$env:INIT_DB='False` (Windows, Powershell) or `export INIT_DB=True` (Linux)
 
 This will create two new folders (`instance` and `migrations`) within your project folder.
 
