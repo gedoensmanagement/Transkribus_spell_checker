@@ -1,4 +1,6 @@
 # Transkribus Spell Checker
+**Work in progress. Tested on Linux/Python 3.7/Anaconda.**
+
 This is a web app written in Python/Flask providing a spell checker for [Transkribus](https://transkribus.eu). The app is specialized on late-medieval Latin texts. It downloads the raw diplomatic transcription from Transkribus, normalizes it (resolves abbreviations, macrons, hyphenation, line breaks) and spell checks the text to detect possible transcription errors. 
 
 In addition, the app can export the text in some special formats (for later usage with other specialized software like [TRACER](https://www.etrap.eu/research/tracer/)). It can also compare two texts on word/character level to detect censorship.
@@ -10,7 +12,7 @@ In addition, the app can export the text in some special formats (for later usag
 * Activate the new environment, e.g. `conda activate dh_blog`.
 * Clone this repository.
 * Use `pip` to install the required Python packages: `pip install -r requirements.txt`.
-* Download the Latin SymSpell dictionary (240 MB) from [here]() and copy it to `my_app/dictionaries/symspell_dictionary_LA.pickle` (Github has a strict file size limit of 100 MB).
+* Download the Latin SymSpell dictionary (240 MB) from [my Google Drive](https://drive.google.com/file/d/1k8EbaNVXER0p6vxE0dPEMTnovnK6t2b-/view?usp=sharing) and copy it to `my_app/dictionaries/symspell_dictionary_LA.pickle` (Github has a strict file size limit of 100 MB). Alternatively, you can generate the dictionary yourself using the Jupyter notebook in [this GitHub repository](https://github.com/gedoensmanagement/dh_blog_Latin_spell_checker/tree/main/build_symspell_dictionary). [My blog article](https://dhlab.hypotheses.org/2191) explains the idea behind it.
 
 ## Before running Flask
 You have to tell Flask the name of your app by setting an [environment variable](https://en.wikipedia.org/wiki/Environment_variable). You can also activate Flask's developer mode using an environment variable. There are different commands for that on every operating system.
