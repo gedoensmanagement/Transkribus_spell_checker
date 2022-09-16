@@ -49,7 +49,7 @@ Finally, we can start the Flask server:
 * Make sure to set the `FLASK_APP` environment variable to `my_app` (see above).
 * Run Flask with `flask run`.
 * If everything works, you should see some status messages. Loading the SymSpell dictionary takes some time! Somewhere you should see this line: `Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)` indicating the base URL of your development server.
-* Visit e`127.0.0.1:5000/login` to get started (no `index.html` implemented yet).
+* Visit `127.0.0.1:5000/login` to get started (no `index.html` implemented yet).
 
 ## Using the app
 ### Register yourself as a user
